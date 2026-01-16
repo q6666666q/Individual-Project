@@ -1,0 +1,43 @@
+ARG PHP_FPM_VER=8.2
+
+FROM composer:2 AS builder
+WORKDIR /app
+COPY conf/composer.json ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+
+
+FROM php:${PHP_FPM_VER}-fpm-alpine AS final
+
+LABEL maintainer.version="v1" \
+  maintainer.name="JUNHAO LIANG" \
+  maintainer.email="junhao.liang@student.uq.edu.au"
+
+RUN apk add --no-cache nginx
+
+
+RUN mkdir -p /run/nginx /var/www/html
+WORKDIR /var/www/html
+
+
+COPY --from=builder /app/vendor ./vendor
+
+
+COPY $PWD/conf/nginx.conf /etc/nginx/nginx.conf
+
+
+RUN docker-php-ext-install opcache pdo_mysql
+
+
+
+COPY src/ /var/www/html/
+COPY --from=builder /app/vendor /var/www/vendor
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost/ || exit 1
+
+WORKDIR /var/www/html
+
+EXPOSE 80
+VOLUME ["/var/www/html", "/var/log/nginx"]
+
+CMD ["sh","-lc","php-fpm & nginx -g 'daemon off;'"]

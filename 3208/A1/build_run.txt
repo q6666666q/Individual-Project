@@ -1,0 +1,5 @@
+docker build -t a1:JUNHAO_LIANG .
+
+docker run --rm -d --name cca1_nginx_php -p 80:80 a1:JUNHAO_LIAN
+
+#During the first run, port 80 was already in use. If it fails to run, stop the occupied port and then try running it again.
